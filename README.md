@@ -18,10 +18,10 @@ Example:
 }`
 
 3) <b>GET</b>
-`localhost:8081/anz/accounts/10001/transactions`
+`localhost:8081/anz/accounts/9001/transactions`
 
 4) <b>POST</b> 
-`localhost:8081/anz/accounts/10001/transactions`
+`localhost:8081/anz/accounts/9001/transactions`
 
 `BODY:
 {
