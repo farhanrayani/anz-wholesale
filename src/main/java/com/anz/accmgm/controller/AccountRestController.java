@@ -12,8 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,26 +23,28 @@ import com.anz.accmgm.domain.Account;
 import com.anz.accmgm.domain.Transaction;
 import com.anz.accmgm.exception.AccountNotFoundException;
 import com.anz.accmgm.exception.TransactionNotFoundException;
-import com.anz.accmgm.repository.AccountDao;
-import com.anz.accmgm.repository.TransactionDao;
+import com.anz.accmgm.service.impl.AccountService;
+import com.anz.accmgm.service.impl.TransactionService;
 
 
 @RestController
 public class AccountRestController {
 	
-	@Autowired
-	private AccountDao accountDao;
+	
 	
 	@Autowired
-	private TransactionDao transactionDao;
-
+	private AccountService accountService;
+	
+	@Autowired
+	private TransactionService transactionService;
+	
 	/**
 	 * getAllAccounts
 	 * @return List<Account> all accounts
 	 */
 	@GetMapping(path="/anz/accounts")
 	public List<Account> getAllAccounts() {
-		return accountDao.findAll();
+		return accountService.getAllAccounts();
 	}
 	
 	/**
@@ -54,7 +54,7 @@ public class AccountRestController {
 	
 	@GetMapping(path="/anz/accounts/{accountNo}")
 	public Optional<Account> retrieveAccount(@PathVariable int accountNo) {
-		Optional<Account> account = accountDao.findById(accountNo);
+		Optional<Account> account = accountService.findByAccountNo(accountNo);
 		
 		if (!account.isPresent()) {
 			throw new AccountNotFoundException("accountNo: " + accountNo);
@@ -78,7 +78,7 @@ public class AccountRestController {
 	 */
 	@PostMapping(path="/anz/accounts")
 	public ResponseEntity<Object> createAccount(@Valid @RequestBody Account account) {
-		Account accountObj = accountDao.save(account);
+		Account accountObj = accountService.saveAccount(account);
 
 		URI location = ServletUriComponentsBuilder
 			.fromCurrentRequest()
@@ -97,7 +97,7 @@ public class AccountRestController {
 	 */
 	@GetMapping(path="/anz/accounts/{accountNo}/transactions")
 	public List<Transaction> getAllTransactions(@PathVariable int accountNo) {
-		Optional<Account> accountOptional = accountDao.findById(accountNo);
+		Optional<Account> accountOptional = accountService.findByAccountNo(accountNo);
 		if (!accountOptional.isPresent()) {
 			throw new AccountNotFoundException("accountNo:" + accountNo);
 		}
@@ -107,7 +107,7 @@ public class AccountRestController {
 	@GetMapping(path="/anz/accounts/{accountNo}/transactions/{transactionId}")
 	public Optional<Transaction> getTransaction(@PathVariable int accountNo,
 			@PathVariable int transactionId) {
-		Optional<Transaction> transaction = transactionDao.findById(transactionId);
+		Optional<Transaction> transaction = transactionService.findByTransactionId(transactionId);
 		
 		if (!transaction.isPresent()) {
 			throw new TransactionNotFoundException("transactionId: " + transactionId);
@@ -117,7 +117,7 @@ public class AccountRestController {
 		
 		// Enable creates links from methods
 		ControllerLinkBuilder linkTo = 
-				linkTo(methodOn(this.getClass()).getAllAccounts());
+				linkTo(methodOn(this.getClass()).getAllTransactions(accountNo));
 		
 		resource.add(linkTo.withRel("all-transactions"));
 		
@@ -134,7 +134,7 @@ public class AccountRestController {
 	public ResponseEntity<Object> createTransaction(@PathVariable int accountNo,
 			@RequestBody Transaction transaction) {
 		
-		Optional<Account> accountOptional = accountDao.findById(accountNo);
+		Optional<Account> accountOptional = accountService.findByAccountNo(accountNo);
 		
 		if (!accountOptional.isPresent()) {
 			throw new AccountNotFoundException("accountNo:" + accountNo);
@@ -142,7 +142,7 @@ public class AccountRestController {
 
 		Account account = accountOptional.get();
 		transaction.setAccount(account);
-		transactionDao.save(transaction);
+		transactionService.saveTransaction(transaction);
 		
 		URI location = ServletUriComponentsBuilder
 			.fromCurrentRequest()
